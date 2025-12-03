@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🇹🇼 台灣華語 RPG：幫我傳說</title>
+    <title>🇹🇼 台灣華語 RPG：幫我傳說 (Audio Ver.)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+TC:wght@400;700&display=swap');
 
         body {
-            background-color: #202020;
+            background-color: #1a1a1a;
             color: #fff;
             font-family: 'DotGothic16', 'Noto Sans TC', sans-serif;
             display: flex;
@@ -17,9 +17,24 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            flex-direction: column;
         }
 
-        /* CRT 螢幕掃描線特效 */
+        /* 遊戲開發者 Credit */
+        .developer-credit {
+            margin-top: 20px;
+            color: #888;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+            animation: glow 3s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { color: #888; }
+            to { color: #fff; text-shadow: 0 0 10px #0f0; }
+        }
+
         .scanlines {
             position: fixed;
             left: 0;
@@ -36,15 +51,40 @@
             width: 800px;
             height: 600px;
             background-color: #000;
-            border: 4px solid #444;
-            border-radius: 10px;
+            border: 6px solid #555;
+            border-radius: 15px;
             position: relative;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 0 20px rgba(0,255,0,0.2);
+            box-shadow: 0 0 30px rgba(0,255,0,0.15);
+            overflow: hidden;
         }
 
-        /* 上半部：場景區 */
+        /* 啟動遮罩 (為了解鎖音效) */
+        #start-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+
+        #start-overlay h1 {
+            color: #0f0;
+            font-size: 3em;
+            text-shadow: 4px 4px 0 #005500;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite;
+        }
+
         .scene-display {
             flex: 2;
             background-size: cover;
@@ -52,6 +92,7 @@
             position: relative;
             border-bottom: 4px solid #fff;
             image-rendering: pixelated;
+            transition: background-image 0.5s ease;
         }
         
         .npc-sprite {
@@ -61,10 +102,9 @@
             transform: translateX(-50%);
             font-size: 150px;
             filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
-            animation: bounce 2s infinite;
+            animation: float 3s infinite ease-in-out;
         }
 
-        /* 狀態欄 */
         .status-bar {
             background: #222;
             padding: 10px 20px;
@@ -72,10 +112,9 @@
             justify-content: space-between;
             border-bottom: 2px solid #555;
             font-size: 1.2em;
-            color: #0f0; /* 復古綠 */
+            color: #0f0;
         }
 
-        /* 下半部：對話與操作區 */
         .dialogue-box {
             flex: 1;
             padding: 20px;
@@ -91,6 +130,7 @@
         .typing-text::after {
             content: '▋';
             animation: blink 0.8s infinite;
+            color: #0f0;
         }
 
         .choices-container {
@@ -118,11 +158,6 @@
             border-color: #0f0;
         }
 
-        .rpg-btn:active {
-            transform: scale(0.98);
-        }
-
-        /* 結局畫面特效 */
         .ending-screen {
             position: absolute;
             top: 0;
@@ -145,21 +180,26 @@
             text-shadow: 4px 4px 0 #c0392b;
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateX(-50%) translateY(0); }
-            50% { transform: translateX(-50%) translateY(-10px); }
-        }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes float { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-15px); } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
     </style>
 </head>
 <body>
     <div class="scanlines"></div>
+    
     <div class="game-boy">
+        <div id="start-overlay" onclick="startGame()">
+            <h1>點擊畫面開始遊戲</h1>
+            <p style="color: #fff; font-size: 1.5em;">(Click to Start & Enable Audio)</p>
+            <p style="color: #888; margin-top: 20px;">請開啟音效以獲得最佳體驗</p>
+        </div>
+
         <div class="status-bar">
             <div>LV. <span id="level">1</span> 外國學生</div>
-            <div>HP (面子): <span id="hp">100</span>/100</div>
-            <div>EXP (台味): <span id="exp">0</span></div>
+            <div>HP: <span id="hp">100</span>/100</div>
+            <div>EXP: <span id="exp">0</span></div>
         </div>
 
         <div class="scene-display" id="scene-bg" style="background-image: url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000');">
@@ -167,9 +207,8 @@
         </div>
 
         <div class="dialogue-box">
-            <div id="story-text" class="typing-text">遊戲載入中...</div>
-            <div class="choices-container" id="choices-area">
-                </div>
+            <div id="story-text" class="typing-text">等待啟動中...</div>
+            <div class="choices-container" id="choices-area"></div>
         </div>
 
         <div class="ending-screen" id="ending-layer">
@@ -177,145 +216,140 @@
             <p id="ending-desc" style="font-size: 1.5em; max-width: 80%; margin-bottom: 30px;"></p>
             <button class="rpg-btn" onclick="location.reload()" style="width: 200px; text-align: center;">重新冒險</button>
         </div>
+
+        <audio id="bgm" loop>
+            <source src="https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3" type="audio/mp3">
+        </audio>
     </div>
 
-<script>
-    // === RPG 數據系統 ===
-    let hp = 100; // 面子 (Face)
-    let exp = 0;  // 台味 (Local Vibe)
-    let currentStep = 0;
+    <div class="developer-credit">遊戲開發：林鴻瑞老師</div>
 
-    // === 劇本資料庫 (基於論文研究) ===
+<script>
+    // === 音效合成器 (Web Audio API) ===
+    // 這樣就不需要下載音效檔，程式碼會自己產生復古音效
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playTone(freq, type, duration) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    const SFX = {
+        type: () => playTone(800 + Math.random()*200, 'square', 0.05), // 打字聲
+        select: () => playTone(440, 'triangle', 0.1), // 選擇聲
+        correct: () => { // 正確：上行琶音
+            playTone(523.25, 'square', 0.1); // C
+            setTimeout(() => playTone(659.25, 'square', 0.1), 100); // E
+            setTimeout(() => playTone(783.99, 'square', 0.2), 200); // G
+        },
+        wrong: () => { // 錯誤：低頻雜訊
+            playTone(150, 'sawtooth', 0.4);
+            setTimeout(() => playTone(100, 'sawtooth', 0.4), 200);
+        }
+    };
+
+    // === 遊戲邏輯 ===
+    let hp = 100;
+    let exp = 0;
+    let currentStep = 0;
+    let isTyping = false;
+
+    // 啟動遊戲
+    function startGame() {
+        const overlay = document.getElementById('start-overlay');
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.style.display = 'none', 500);
+        
+        // 播放 BGM (音量調小)
+        const bgm = document.getElementById('bgm');
+        bgm.volume = 0.3;
+        bgm.play().catch(e => console.log("Audio play failed", e));
+
+        renderScene(0);
+    }
+
+    // 劇本 (同前版)
     const storyLine = [
         {
-            // 序章
             bg: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=1000",
             npc: "✈️",
-            text: "你剛抵達台灣，肚子很餓。這是一場關於「禮貌」與「生存」的冒險。\n如果你的「面子(HP)」歸零，遊戲就會結束。\n\n你走進了一家知名飲料店...",
-            choices: [
-                { text: "開始冒險", next: 1, effect: null }
-            ]
+            text: "歡迎來到台灣！\n這是一場關於「幫我」的生存挑戰。\n請注意你的「面子(HP)」，歸零就尷尬囉！",
+            choices: [{ text: "開始冒險", next: 1, effect: null }]
         },
         {
-            // 第一關：飲料店 (搖一搖)
-            // 引用論文：新式「幫我」[cite: 58, 174]
             bg: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?q=80&w=1000",
             npc: "🥤",
-            text: "【店員】：「先生你好，這杯黑糖珍奶，喝之前麻煩 **幫我** 搖一下喔！」\n\n(你的抉擇時刻到了...)",
+            text: "【飲料店】\n店員：「飲料好囉！喝之前麻煩幫我搖一下喔！」",
             choices: [
-                { 
-                    text: "A. 好的！(拿過飲料，自己上下搖晃)", 
-                    next: 2, 
-                    effect: { hp: 0, exp: 20, msg: "店員微笑點頭。你獲得了 20 點台味經驗值！" } 
-                },
-                { 
-                    text: "B. 沒問題！(不接飲料，抓住店員的手開始搖)", 
-                    next: 2, 
-                    effect: { hp: -30, exp: 0, msg: "店員嚇壞了！全場靜默...你的「面子」受損了 30 點！\n(解析：店員是請你自己搖飲料，不是要你幫他搖。)" } 
-                }
+                { text: "A. 好的 (自己搖飲料)", next: 2, effect: { hp: 0, exp: 20, msg: "店員微笑。這是新式指令！" } },
+                { text: "B. 幫店員搖飲料", next: 2, effect: { hp: -30, exp: 0, msg: "店員嚇到...他不是要你幫忙啦！" } }
             ]
         },
         {
-            // 第二關：診所/按摩 (脫襪子) - 這是最危險的一關
-            // 引用論文：歧義現象 [cite: 7, 78, 138]
             bg: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000",
             npc: "👩‍⚕️",
-            text: "你覺得身體有點累，去做了健康檢查。\n【護理師】：「先生，我們要量體脂囉，請 **幫我** 脫一下襪子。」",
+            text: "【診所】\n護理師：「先生我們要量體脂，請幫我脫一下襪子。」",
             choices: [
-                { 
-                    text: "A. (蹲下來，伸手去脫護理師的襪子)", 
-                    next: 3, 
-                    effect: { hp: -60, exp: 0, msg: "護理師尖叫：「變態！」警察差點來了。\n你的「面子」受到重創，扣除 60 點！\n(解析：這是服務業的禮貌指令，是請你脫自己的襪子！)" } 
-                },
-                { 
-                    text: "B. (脫掉自己腳上的襪子)", 
-                    next: 3, 
-                    effect: { hp: 0, exp: 30, msg: "流程順利進行。你感覺自己越來越像台灣人了！\n(獲得 30 點台味)" } 
-                }
+                { text: "A. 去脫護理師的襪子", next: 3, effect: { hp: -60, exp: 0, msg: "變態！護理師尖叫！面子大損！" } },
+                { text: "B. 脫自己的襪子", next: 3, effect: { hp: 0, exp: 30, msg: "正確！這是為了方便流程進行。" } }
             ]
         },
         {
-            // 第三關：餐廳 (帶位)
-            // 引用論文：場域協調型 [cite: 65, 84]
             bg: "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=1000",
             npc: "🍽️",
-            text: "檢查完身體餓了，你來到一家熱炒店。\n【服務生】：「兩位嗎？前面請 **幫我** 坐在第三桌喔。」",
+            text: "【餐廳】\n服務生：「前面請幫我坐在第三桌喔。」",
             choices: [
-                { 
-                    text: "A. (走過去，把服務生公主抱到第三桌)", 
-                    next: 4, 
-                    effect: { hp: -50, exp: 0, msg: "服務生臉紅又生氣。你被趕出了餐廳。\n(解析：這是空間指引，不是要你幫服務生就座！)" } 
-                },
-                { 
-                    text: "B. (自己走到第三桌坐下)", 
-                    next: 4, 
-                    effect: { hp: 0, exp: 20, msg: "你順利入座。隔壁桌的大哥稱讚你「內行」！\n(獲得 20 點台味)" } 
-                }
+                { text: "A. 扶服務生去坐", next: 4, effect: { hp: -50, exp: 0, msg: "服務生：先生你幹嘛... (尷尬)" } },
+                { text: "B. 自己去坐", next: 4, effect: { hp: 0, exp: 20, msg: "內行！這是場域協調的禮貌用法。" } }
             ]
         },
         {
-            // 第四關：傳統情境 (陷阱題)
-            // 引用論文：傳統幫我 vs 新式幫我 [cite: 19, 114]
             bg: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1000",
-            npc: "📦",
-            text: "回家路上，看到鄰居阿婆搬著很重的箱子。\n【阿婆】：「年輕人，**幫我** 搬一下這個好嗎？」",
+            npc: "👵",
+            text: "【路邊】\n阿婆搬箱子：「年輕人，幫我搬一下好嗎？」",
             choices: [
-                { 
-                    text: "A. (站在原地看著阿婆，以為她在對自己說話)", 
-                    next: 99, // 99 代表結算
-                    effect: { hp: -20, exp: 0, msg: "阿婆翻了個白眼走了。\n(解析：這是傳統情境！是真的需要幫忙！)" } 
-                },
-                { 
-                    text: "B. (立刻上前接過箱子)", 
-                    next: 99, 
-                    effect: { hp: 10, exp: 30, msg: "阿婆：「哩揪甘心耶！」(你真貼心)\n(面子恢復 10 點，獲得 30 點台味)" } 
-                }
+                { text: "A. 站著不動 (以為是指令)", next: 99, effect: { hp: -20, exp: 0, msg: "阿婆生氣了！這是真的求助！" } },
+                { text: "B. 馬上幫忙", next: 99, effect: { hp: 10, exp: 30, msg: "阿婆感謝你！這就是台灣人情味！" } }
             ]
         }
     ];
 
-    // === 遊戲核心邏輯 ===
-
     function renderScene(index) {
-        // 檢查是否死亡
-        if (hp <= 0) {
-            showEnding("bad_social_death");
-            return;
-        }
-
-        // 檢查是否通關
-        if (index === 99) {
-            determineEnding();
-            return;
-        }
+        if (hp <= 0) { showEnding("bad"); return; }
+        if (index === 99) { determineEnding(); return; }
 
         const data = storyLine[index];
-        currentStep = index;
-
-        // 更新背景與 NPC
         document.getElementById("scene-bg").style.backgroundImage = `url('${data.bg}')`;
         document.getElementById("npc-emoji").innerText = data.npc;
+        document.getElementById("choices-area").innerHTML = "";
 
-        // 打字機效果輸出文字
         const textBox = document.getElementById("story-text");
         textBox.innerHTML = "";
         let i = 0;
-        const speed = 30; 
-        
+        isTyping = true;
+
         function typeWriter() {
             if (i < data.text.length) {
-                textBox.innerHTML += data.text.charAt(i) === '\n' ? '<br>' : data.text.charAt(i);
+                const char = data.text.charAt(i);
+                textBox.innerHTML += char === '\n' ? '<br>' : char;
+                if(i % 3 === 0) SFX.type(); // 每3個字發出一次聲音，避免太吵
                 i++;
-                setTimeout(typeWriter, speed);
+                setTimeout(typeWriter, 50);
             } else {
-                // 文字打完後，生成選項
+                isTyping = false;
                 renderChoices(data.choices);
             }
         }
         typeWriter();
-        
-        // 清空舊選項
-        document.getElementById("choices-area").innerHTML = "";
     }
 
     function renderChoices(choices) {
@@ -324,81 +358,66 @@
             const btn = document.createElement("button");
             btn.className = "rpg-btn";
             btn.innerText = choice.text;
+            btn.onmouseenter = () => SFX.select(); // 滑鼠經過音效
             btn.onclick = () => handleChoice(choice);
             area.appendChild(btn);
         });
     }
 
     function handleChoice(choice) {
-        // 處理效果
+        if (isTyping) return; // 打字中不能按
+
         if (choice.effect) {
             hp += choice.effect.hp;
             exp += choice.effect.exp;
             if (hp > 100) hp = 100;
-            
-            // 更新 UI
             updateStats();
-            
-            // 顯示反饋 (簡單的 alert 或中間層，這裡用 alert 模擬 RPG 系統訊息)
-            if (choice.effect.msg) {
-                alert(choice.effect.msg);
+
+            if (choice.effect.hp < 0) {
+                SFX.wrong(); // 答錯音效
+                alert("❌ " + choice.effect.msg);
+            } else {
+                SFX.correct(); // 答對音效
+                if(choice.effect.msg) alert("⭕ " + choice.effect.msg);
             }
         }
-
-        // 前往下一關
         renderScene(choice.next);
     }
 
     function updateStats() {
-        document.getElementById("hp").innerText = hp;
-        document.getElementById("exp").innerText = exp;
-        
-        // 血量顏色
         const hpEl = document.getElementById("hp");
-        if (hp < 30) hpEl.style.color = "#e74c3c"; // 紅
-        else if (hp < 70) hpEl.style.color = "#f1c40f"; // 黃
-        else hpEl.style.color = "#0f0"; // 綠
+        hpEl.innerText = hp;
+        document.getElementById("exp").innerText = exp;
+        if (hp < 50) hpEl.style.color = "#e74c3c";
+        else hpEl.style.color = "#0f0";
     }
 
     function determineEnding() {
-        if (exp >= 80) {
-            showEnding("master");
-        } else if (exp >= 40) {
-            showEnding("normal");
-        } else {
-            showEnding("awkward");
-        }
+        if (exp >= 80) showEnding("master");
+        else showEnding("normal");
     }
 
     function showEnding(type) {
         const screen = document.getElementById("ending-layer");
         const title = document.getElementById("ending-title");
         const desc = document.getElementById("ending-desc");
-        
         screen.style.display = "flex";
 
         if (type === "master") {
-            title.innerText = "🏆 結局：台味大師";
-            desc.innerHTML = "你完全掌握了「幫我」的精隨！<br>現在你已經可以像當地人一樣，<br>在飲料店和診所自如穿梭。<br>服務員都覺得你超有禮貌！";
-            desc.style.color = "#f1c40f";
-        } else if (type === "normal") {
-            title.innerText = "😐 結局：普通的遊客";
-            desc.innerHTML = "你雖然偶爾會會錯意，<br>但大體上還算過得去。<br>這就是學習語言的過程嘛！";
-            desc.style.color = "#fff";
-        } else if (type === "awkward") {
-            title.innerText = "🥶 結局：尷尬癌末期";
-            desc.innerHTML = "你總是把「幫我」當成真的要幫忙...<br>你試圖幫店員做事，卻造成了更多麻煩。<br>店員們現在看到你都會躲起來。";
-            desc.style.color = "#3498db";
-        } else if (type === "bad_social_death") {
-            title.innerText = "💀 結局：社會性死亡";
-            desc.innerHTML = "你的面子(HP)歸零了。<br>因為你在診所脫了護理師的襪子，<br>現在你已經被列入黑名單，遊戲結束。";
-            desc.style.color = "#e74c3c";
+            title.innerText = "🏆 台味大師";
+            title.style.color = "#f1c40f";
+            desc.innerHTML = "林鴻瑞老師認證：<br>你已經完全掌握台灣華語的精隨了！";
+            SFX.correct();
+        } else if (type === "bad") {
+            title.innerText = "💀 社會性死亡";
+            title.style.color = "#e74c3c";
+            desc.innerHTML = "因為誤解「幫我」，你造成了太大的尷尬...<br>請重新修練！";
+            SFX.wrong();
+        } else {
+            title.innerText = "😐 普通遊客";
+            desc.innerHTML = "還不錯，但還有進步空間！";
         }
     }
-
-    // 啟動遊戲
-    renderScene(0);
-
 </script>
 </body>
 </html>
