@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臺灣華語大冒險：幫我偵探</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .game-container {
+            background-color: white;
+            width: 600px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px solid #4a90e2;
+        }
+        .scene-badge {
+            background-color: #ff9f43;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .character-img {
+            font-size: 80px;
+            margin: 10px 0;
+            display: block;
+        }
+        .dialogue-box {
+            background-color: #eef2f5;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            border-left: 5px solid #4a90e2;
+        }
+        .keyword {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background-color: #357abd;
+        }
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .wrong {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .next-btn {
+            background-color: #2ecc71;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="game-screen">
+        <div class="scene-badge" id="scene-text">場景：飲料店</div>
+        <div class="character-img" id="char-emoji">🥤</div>
+        <h3><span id="char-name">店員</span> 對你說：</h3>
+        
+        <div class="dialogue-box">
+            「飲料好囉！喝之前再<span class="keyword">幫我</span>搖一下喔！」
+        </div>
+
+        <div class="btn-group" id="choices">
+            <button onclick="checkAnswer(1)">A. 我要把飲料拿給店員，幫他搖一搖</button>
+            <button onclick="checkAnswer(2)">B. 我拿著自己的飲料，我自己搖一搖</button>
+        </div>
+
+        <div id="feedback-area" class="feedback"></div>
+        <button id="next-btn" class="next-btn" onclick="nextLevel()">下一題 ➜</button>
+    </div>
+
+    <div id="end-screen" style="display: none;">
+        <h2>🎉 遊戲結束！</h2>
+        <p>你已經學會分辨臺灣華語的「新式幫我」了！</p>
+        <p id="final-score" style="font-size: 1.5em; font-weight: bold; color: #4a90e2;"></p>
+        <button onclick="location.reload()">再玩一次</button>
+    </div>
+</div>
+
+<script>
+    // 題目資料庫 - 根據論文真實語料改編
+    const questions = [
+        {
+            scene: "飲料店 (Beverage Shop)",
+            role: "店員 (Clerk)",
+            emoji: "🥤",
+            text: "飲料好囉！喝之前再<span class='keyword'>幫我</span>搖一下喔！",
+            options: [
+                "A. 我把飲料拿給店員，幫店員搖 (I shake it for the clerk)",
+                "B. 我拿著自己的飲料，我自己搖 (I shake my own drink)"
+            ],
+            correctIndex: 1, // B is correct (0 is A, 1 is B)
+            explanation: "✅ 正確！這是新式用法。店員並沒有要你幫忙，這只是一個客氣的指令，要你自己搖自己的飲料 [cite: 57]。"
+        },
+        {
+            scene: "家裡的客廳 (Living Room)",
+            role: "受傷的兒子 (Injured Son)",
+            emoji: "🤕",
+            text: "媽，我的腳好痛，請<span class='keyword'>幫我</span>脫一下襪子。",
+            options: [
+                "A. 媽媽幫兒子脫襪子 (Mom takes off son's socks)",
+                "B. 媽媽脫掉自己的襪子 (Mom takes off her own socks)"
+            ],
+            correctIndex: 0,
+            explanation: "✅ 答對了！這是傳統用法。兒子受傷了，是真的請求協助，受益者是說話者(兒子) 。"
+        },
+        {
+            scene: "診所/健身房 (Clinic/Gym)",
+            role: "護理師/服務員 (Staff)",
+            emoji: "👩‍⚕️",
+            text: "我們要量體脂囉，請<span class='keyword'>幫我</span>脫一下襪子。",
+            options: [
+                "A. 我要幫護理師脫襪子 (I take off the nurse's socks)",
+                "B. 我要脫掉我自己的襪子 (I take off my own socks)"
+            ],
+            correctIndex: 1,
+            explanation: "✅ 正確！雖然句子一樣，但在服務業情境下，這是請你自己脫掉自己的襪子來配合檢查，是一種禮貌策略 [cite: 7, 82]。"
+        },
+        {
+            scene: "餐廳 (Restaurant)",
+            role: "帶位員 (Waiter)",
+            emoji: "🍽️",
+            text: "兩位嗎？前面請<span class='keyword'>幫我</span>坐在第三桌喔。",
+            options: [
+                "A. 我走到第三桌坐下來 (I go sit at table 3)",
+                "B. 我把服務生抱到第三桌 (I carry the waiter to table 3)"
+            ],
+            correctIndex: 0,
+            explanation: "✅ 沒錯！這不需要幫服務生坐。這是為了緩和命令語氣，讓你感覺不是被命令，而是合作 [cite: 6, 76]。"
+        },
+        {
+            scene: "結帳櫃檯 (Cashier)",
+            role: "店員 (Clerk)",
+            emoji: "📱",
+            text: "您好，這裡有一個 QR Code，<span class='keyword'>幫我</span>掃碼點餐喔。",
+            options: [
+                "A. 我拿出手機掃描 (I scan with my phone)",
+                "B. 我拿店員的手機幫他掃 (I scan with clerk's phone)"
+            ],
+            correctIndex: 0,
+            explanation: "✅ 正確！這是「服務流程指令型」。行為由你執行，目的是讓點餐流程順利進行 [cite: 61]。"
+        }
+    ];
+
+    let currentQ = 0;
+    let score = 0;
+
+    function loadQuestion() {
+        const q = questions[currentQ];
+        document.getElementById("scene-text").innerText = "場景：" + q.scene;
+        document.getElementById("char-name").innerText = q.role;
+        document.getElementById("char-emoji").innerText = q.emoji;
+        document.querySelector(".dialogue-box").innerHTML = "「" + q.text + "」";
+        
+        const buttons = document.querySelectorAll("#choices button");
+        buttons[0].innerText = q.options[0];
+        buttons[1].innerText = q.options[1];
+        
+        // Reset styles
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.style.backgroundColor = "#4a90e2";
+        });
+        document.getElementById("feedback-area").style.display = "none";
+        document.getElementById("next-btn").style.display = "none";
+    }
+
+    function checkAnswer(choice) {
+        const q = questions[currentQ];
+        const buttons = document.querySelectorAll("#choices button");
+        const feedback = document.getElementById("feedback-area");
+        
+        // Check logic (choice 1 = index 0, choice 2 = index 1)
+        const isCorrect = (choice - 1) === q.correctIndex;
+
+        buttons.forEach(btn => btn.disabled = true); // Disable buttons
+
+        feedback.style.display = "block";
+        document.getElementById("next-btn").style.display = "block";
+
+        if (isCorrect) {
+            score++;
+            feedback.className = "feedback correct";
+            feedback.innerText = q.explanation;
+        } else {
+            feedback.className = "feedback wrong";
+            // Custom wrong message based on context
+            if(q.correctIndex === 1) { // If answer should be self-action (New Style)
+                feedback.innerText = "❌ 哎呀！在這個情境下，店員不是真的要你幫忙他做事，而是客氣地請你自己做喔！[cite: 59]";
+            } else { // If answer should be helping (Traditional)
+                feedback.innerText = "❌ 不對喔！這裡是傳統用法，家人受傷了是真的需要你的幫助！";
+            }
+        }
+    }
+
+    function nextLevel() {
+        currentQ++;
+        if (currentQ < questions.length) {
+            loadQuestion();
+        } else {
+            showEndScreen();
+        }
+    }
+
+    function showEndScreen() {
+        document.getElementById("game-screen").style.display = "none";
+        document.getElementById("end-screen").style.display = "block";
+        document.getElementById("final-score").innerText = "你的得分： " + score + " / " + questions.length;
+    }
+
+    // Start the game
+    loadQuestion();
+
+</script>
+
+</body>
+</html>
