@@ -3,262 +3,566 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺灣華語大冒險：幫我偵探</title>
+    <title>🇹🇼 台灣華語大冒險：幫我大偵探 V2</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
         body {
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background-color: #f0f4f8;
+            font-family: 'Noto Sans TC', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
+            background-color: #2c3e50;
         }
-        .game-container {
-            background-color: white;
-            width: 600px;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-            border: 2px solid #4a90e2;
+
+        /* 動態背景層 */
+        #bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            filter: blur(4px) brightness(0.6);
+            transition: background-image 0.5s ease-in-out;
+            z-index: -1;
         }
-        .scene-badge {
-            background-color: #ff9f43;
-            color: white;
-            padding: 5px 15px;
+
+        /* 遊戲主視窗 */
+        .game-window {
+            width: 90%;
+            max-width: 800px;
+            height: 85vh;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: bold;
-            display: inline-block;
-            margin-bottom: 15px;
-        }
-        .character-img {
-            font-size: 80px;
-            margin: 10px 0;
-            display: block;
-        }
-        .dialogue-box {
-            background-color: #eef2f5;
-            padding: 20px;
-            border-radius: 10px;
-            font-size: 1.2em;
-            color: #333;
-            margin-bottom: 25px;
-            line-height: 1.5;
-            border-left: 5px solid #4a90e2;
-        }
-        .keyword {
-            color: #e74c3c;
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-        .btn-group {
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #fff;
+        }
+
+        /* 頂部狀態列 */
+        .status-bar {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        /* 台味指數血條 */
+        .health-container {
+            width: 50%;
+            background: #555;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #fff;
+        }
+        .health-bar {
+            width: 50%; /* 初始值 */
+            height: 100%;
+            background: linear-gradient(90deg, #f1c40f, #e67e22);
+            transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* 角色區域 */
+        .character-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .character-emoji {
+            font-size: 150px;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
+            animation: float 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .character-emoji:hover {
+            transform: scale(1.1);
+        }
+
+        /* 對話框區域 */
+        .dialogue-section {
+            background: #fff;
+            padding: 20px;
+            border-top: 4px solid #3498db;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .name-tag {
+            background: #3498db;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            display: inline-block;
+            font-weight: 900;
+            margin-bottom: 10px;
+            align-self: flex-start;
+            box-shadow: 2px 2px 0px #2980b9;
+        }
+
+        .dialogue-text {
+            font-size: 1.3em;
+            color: #2c3e50;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+
+        .keyword {
+            color: #e74c3c;
+            font-weight: 900;
+            font-size: 1.4em;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 0 5px;
+            border-radius: 5px;
+        }
+
+        /* 選項按鈕 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
-        button {
-            background-color: #4a90e2;
+        
+        .option-btn {
+            background: white;
+            border: 2px solid #bdc3c7;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            color: #7f8c8d;
+            box-shadow: 0 4px 0 #bdc3c7;
+        }
+
+        .option-btn:hover {
+            border-color: #3498db;
+            color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #bdc3c7;
+        }
+
+        .option-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 0 0 #bdc3c7;
+        }
+
+        /* 浮誇的回饋視窗 (Overlay) */
+        #feedback-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            animation: fadeIn 0.3s;
+        }
+
+        .feedback-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            width: 70%;
+            transform: scale(0.8);
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .feedback-title {
+            font-size: 2em;
+            margin: 0 0 10px 0;
+        }
+        .feedback-title.correct { color: #2ecc71; text-shadow: 2px 2px 0 #27ae60;}
+        .feedback-title.wrong { color: #e74c3c; text-shadow: 2px 2px 0 #c0392b;}
+
+        .next-btn {
+            background: #3498db;
             color: white;
             border: none;
-            padding: 15px;
-            font-size: 1.1em;
-            border-radius: 8px;
+            padding: 10px 30px;
+            font-size: 1.2em;
+            border-radius: 50px;
             cursor: pointer;
-            transition: 0.2s;
-        }
-        button:hover {
-            background-color: #357abd;
-        }
-        .feedback {
             margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            display: none;
+            font-weight: bold;
+            box-shadow: 0 5px 0 #2980b9;
+            transition: transform 0.1s;
         }
-        .correct {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        .next-btn:active { transform: translateY(3px); box-shadow: none; }
+
+        /* 動畫特效 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
         }
-        .wrong {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        @keyframes popIn {
+            to { transform: scale(1); }
         }
-        .next-btn {
-            background-color: #2ecc71;
-            margin-top: 15px;
-            display: none;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .shake-effect {
+            animation: shake 0.5s;
+        }
+
+        /* 簡易彩帶 Canvas */
+        #confetti-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
     </style>
 </head>
 <body>
 
-<div class="game-container">
-    <div id="game-screen">
-        <div class="scene-badge" id="scene-text">場景：飲料店</div>
-        <div class="character-img" id="char-emoji">🥤</div>
-        <h3><span id="char-name">店員</span> 對你說：</h3>
-        
-        <div class="dialogue-box">
-            「飲料好囉！喝之前再<span class="keyword">幫我</span>搖一下喔！」
+    <div id="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000');"></div>
+
+    <div class="game-window" id="game-window">
+        <div class="status-bar">
+            <span>LEVEL <span id="level-display">1</span></span>
+            <div style="display: flex; align-items: center; gap: 10px; width: 60%;">
+                <span>🔥 台味指數 (Tai-wei Level):</span>
+                <div class="health-container">
+                    <div class="health-bar" id="health-bar"></div>
+                </div>
+            </div>
+            <span>SCORE: <span id="score-display">0</span></span>
         </div>
 
-        <div class="btn-group" id="choices">
-            <button onclick="checkAnswer(1)">A. 我要把飲料拿給店員，幫他搖一搖</button>
-            <button onclick="checkAnswer(2)">B. 我拿著自己的飲料，我自己搖一搖</button>
+        <div class="character-area">
+            <div class="character-emoji" id="char-emoji">🧑‍🍳</div>
         </div>
 
-        <div id="feedback-area" class="feedback"></div>
-        <button id="next-btn" class="next-btn" onclick="nextLevel()">下一題 ➜</button>
-    </div>
+        <div class="dialogue-section">
+            <div class="name-tag" id="char-name">店員</div>
+            <div class="dialogue-text" id="dialogue-text">
+                載入中...
+            </div>
+            <div class="options-grid" id="options-area">
+                <button class="option-btn" onclick="makeChoice(0)">選項 A</button>
+                <button class="option-btn" onclick="makeChoice(1)">選項 B</button>
+            </div>
+        </div>
 
-    <div id="end-screen" style="display: none;">
-        <h2>🎉 遊戲結束！</h2>
-        <p>你已經學會分辨臺灣華語的「新式幫我」了！</p>
-        <p id="final-score" style="font-size: 1.5em; font-weight: bold; color: #4a90e2;"></p>
-        <button onclick="location.reload()">再玩一次</button>
+        <div id="feedback-overlay">
+            <div class="feedback-card">
+                <h2 class="feedback-title" id="feedback-title">標題</h2>
+                <div style="font-size: 50px; margin-bottom: 10px;" id="feedback-icon">🎉</div>
+                <p style="font-size: 1.1em; line-height: 1.5; color: #555;" id="feedback-msg">內容</p>
+                <button class="next-btn" onclick="nextQuestion()">繼續下一題 ➜</button>
+            </div>
+        </div>
+
+        <canvas id="confetti-canvas"></canvas>
     </div>
-</div>
 
 <script>
-    // 題目資料庫 - 根據論文真實語料改編
+    // === 遊戲資料庫 (參考論文真實語料) ===
     const questions = [
         {
-            scene: "飲料店 (Beverage Shop)",
-            role: "店員 (Clerk)",
+            bg: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?q=80&w=1000", // Coffee Shop
+            role: "飲料店店員 (Clerk)",
             emoji: "🥤",
             text: "飲料好囉！喝之前再<span class='keyword'>幫我</span>搖一下喔！",
-            options: [
-                "A. 我把飲料拿給店員，幫店員搖 (I shake it for the clerk)",
-                "B. 我拿著自己的飲料，我自己搖 (I shake my own drink)"
+            choices: [
+                { text: "我幫店員搖飲料 (Shake for clerk)", type: "wrong" },
+                { text: "我自己搖我自己的飲料 (Shake my own)", type: "correct" }
             ],
-            correctIndex: 1, // B is correct (0 is A, 1 is B)
-            explanation: "✅ 正確！這是新式用法。店員並沒有要你幫忙，這只是一個客氣的指令，要你自己搖自己的飲料 [cite: 57]。"
+            correctMsg: "沒錯！店員才不想喝你的飲料呢 😂。<br>這是服務業的「客氣指令」。",
+            wrongMsg: "尷尬了！店員用奇怪的眼神看著你...<br>他其實只是要你自己搖一搖啦！"
         },
         {
-            scene: "家裡的客廳 (Living Room)",
-            role: "受傷的兒子 (Injured Son)",
+            bg: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1000", // Living Room
+            role: "受傷的兒子 (Son)",
             emoji: "🤕",
             text: "媽，我的腳好痛，請<span class='keyword'>幫我</span>脫一下襪子。",
-            options: [
-                "A. 媽媽幫兒子脫襪子 (Mom takes off son's socks)",
-                "B. 媽媽脫掉自己的襪子 (Mom takes off her own socks)"
+            choices: [
+                { text: "媽媽幫兒子脫襪子 (Help him)", type: "correct" },
+                { text: "媽媽脫掉自己的襪子 (Take off own)", type: "wrong" }
             ],
-            correctIndex: 0,
-            explanation: "✅ 答對了！這是傳統用法。兒子受傷了，是真的請求協助，受益者是說話者(兒子) 。"
+            correctMsg: "正確！這是傳統的「請求協助」。<br>因為兒子受傷了，是真的需要幫忙！",
+            wrongMsg: "等等！媽媽為什麼要脫自己的襪子？<br>這時候是真的需要幫忙啦！😂"
         },
         {
-            scene: "診所/健身房 (Clinic/Gym)",
-            role: "護理師/服務員 (Staff)",
+            bg: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000", // Hospital/Clinic
+            role: "護理師 (Nurse)",
             emoji: "👩‍⚕️",
-            text: "我們要量體脂囉，請<span class='keyword'>幫我</span>脫一下襪子。",
-            options: [
-                "A. 我要幫護理師脫襪子 (I take off the nurse's socks)",
-                "B. 我要脫掉我自己的襪子 (I take off my own socks)"
+            text: "先生你好，我們要量體脂囉，請<span class='keyword'>幫我</span>脫一下襪子。",
+            choices: [
+                { text: "我幫護理師脫襪子 (Help nurse)", type: "wrong" },
+                { text: "我脫自己的襪子 (Take off mine)", type: "correct" }
             ],
-            correctIndex: 1,
-            explanation: "✅ 正確！雖然句子一樣，但在服務業情境下，這是請你自己脫掉自己的襪子來配合檢查，是一種禮貌策略 [cite: 7, 82]。"
+            correctMsg: "太強了！你懂台灣的潛規則。<br>這是為了流程順暢，請你自己配合脫襪子。",
+            wrongMsg: "警察叔叔！就是這個人！🚨<br>你去脫護理師的襪子會被抓走的！這是客氣的指令！"
         },
         {
-            scene: "餐廳 (Restaurant)",
-            role: "帶位員 (Waiter)",
+            bg: "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=1000", // Restaurant
+            role: "餐廳帶位員 (Waiter)",
             emoji: "🍽️",
             text: "兩位嗎？前面請<span class='keyword'>幫我</span>坐在第三桌喔。",
-            options: [
-                "A. 我走到第三桌坐下來 (I go sit at table 3)",
-                "B. 我把服務生抱到第三桌 (I carry the waiter to table 3)"
+            choices: [
+                { text: "我走到第三桌坐下來 (Go sit)", type: "correct" },
+                { text: "我幫服務生坐在那邊 (Help waiter sit)", type: "wrong" }
             ],
-            correctIndex: 0,
-            explanation: "✅ 沒錯！這不需要幫服務生坐。這是為了緩和命令語氣，讓你感覺不是被命令，而是合作 [cite: 6, 76]。"
+            correctMsg: "Bingo! 這是「場域協調型」的幫我。<br>聽起來比「請去坐那邊」更有禮貌對吧？",
+            wrongMsg: "服務生還在上班，不能坐啦！😅<br>他是請你自己去坐那個位子。"
         },
         {
-            scene: "結帳櫃檯 (Cashier)",
-            role: "店員 (Clerk)",
-            emoji: "📱",
-            text: "您好，這裡有一個 QR Code，<span class='keyword'>幫我</span>掃碼點餐喔。",
-            options: [
-                "A. 我拿出手機掃描 (I scan with my phone)",
-                "B. 我拿店員的手機幫他掃 (I scan with clerk's phone)"
-            ],
-            correctIndex: 0,
-            explanation: "✅ 正確！這是「服務流程指令型」。行為由你執行，目的是讓點餐流程順利進行 [cite: 61]。"
+             bg: "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=80&w=1000", // Cashier
+             role: "結帳店員 (Cashier)",
+             emoji: "💳",
+             text: "這張卡片感應不到耶，<span class='keyword'>幫我</span>插卡試試看。",
+             choices: [
+                 { text: "我拿店員的卡片插 (Insert clerk's card)", type: "wrong" },
+                 { text: "我把我的卡片插進去 (Insert my card)", type: "correct" }
+             ],
+             correctMsg: "完全正確！這是指令。<br>店員希望你自己操作刷卡機。",
+             wrongMsg: "店員沒有要給你他的卡片啦！<br>他是請你自己操作你的卡片。"
         }
     ];
 
-    let currentQ = 0;
+    // === 遊戲狀態 ===
+    let currentQIndex = 0;
     let score = 0;
+    let health = 50; // 台味指數初始值
+    let isGameOver = false;
 
+    // === 初始化 ===
+    function initGame() {
+        score = 0;
+        health = 50;
+        currentQIndex = 0;
+        updateStats();
+        loadQuestion();
+        document.getElementById("end-screen")?.remove();
+    }
+
+    // === 載入題目 ===
     function loadQuestion() {
-        const q = questions[currentQ];
-        document.getElementById("scene-text").innerText = "場景：" + q.scene;
+        if (currentQIndex >= questions.length) {
+            gameWin();
+            return;
+        }
+
+        const q = questions[currentQIndex];
+        
+        // 更新文字
+        document.getElementById("level-display").innerText = currentQIndex + 1;
         document.getElementById("char-name").innerText = q.role;
         document.getElementById("char-emoji").innerText = q.emoji;
-        document.querySelector(".dialogue-box").innerHTML = "「" + q.text + "」";
+        document.getElementById("dialogue-text").innerHTML = `「${q.text}」`;
         
-        const buttons = document.querySelectorAll("#choices button");
-        buttons[0].innerText = q.options[0];
-        buttons[1].innerText = q.options[1];
+        // 更新背景 (淡入淡出)
+        const bgLayer = document.getElementById("bg-layer");
+        bgLayer.style.opacity = 0;
+        setTimeout(() => {
+            bgLayer.style.backgroundImage = `url('${q.bg}')`;
+            bgLayer.style.opacity = 1;
+        }, 500);
+
+        // 更新按鈕 (隨機順序)
+        const btnArea = document.getElementById("options-area");
+        btnArea.innerHTML = "";
         
-        // Reset styles
-        buttons.forEach(btn => {
-            btn.disabled = false;
-            btn.style.opacity = "1";
-            btn.style.backgroundColor = "#4a90e2";
+        // 簡單洗牌
+        let shuffledChoices = [...q.choices].sort(() => Math.random() - 0.5);
+
+        shuffledChoices.forEach(choice => {
+            const btn = document.createElement("button");
+            btn.className = "option-btn";
+            btn.innerText = choice.text;
+            btn.onclick = () => handleAnswer(choice.type, choice.text);
+            btnArea.appendChild(btn);
         });
-        document.getElementById("feedback-area").style.display = "none";
-        document.getElementById("next-btn").style.display = "none";
     }
 
-    function checkAnswer(choice) {
-        const q = questions[currentQ];
-        const buttons = document.querySelectorAll("#choices button");
-        const feedback = document.getElementById("feedback-area");
+    // === 處理回答 ===
+    function handleAnswer(type, text) {
+        const overlay = document.getElementById("feedback-overlay");
+        const title = document.getElementById("feedback-title");
+        const msg = document.getElementById("feedback-msg");
+        const icon = document.getElementById("feedback-icon");
+        const q = questions[currentQIndex];
+
+        overlay.style.display = "flex";
+
+        if (type === "correct") {
+            // 答對邏輯
+            score += 100;
+            health = Math.min(100, health + 20); // 加血
+            title.innerText = "太強了！道地台味！";
+            title.className = "feedback-title correct";
+            msg.innerHTML = q.correctMsg;
+            icon.innerText = "🤩";
+            startConfetti(); // 噴彩帶
+        } else {
+            // 答錯邏輯
+            health = Math.max(0, health - 30); // 扣血
+            title.innerText = "尷尬了...店員傻眼";
+            title.className = "feedback-title wrong";
+            msg.innerHTML = q.wrongMsg;
+            icon.innerText = "🥶";
+            
+            // 畫面震動特效
+            const gameWindow = document.getElementById("game-window");
+            gameWindow.classList.add("shake-effect");
+            setTimeout(() => gameWindow.classList.remove("shake-effect"), 500);
+        }
+
+        updateStats();
+    }
+
+    // === 更新狀態條 ===
+    function updateStats() {
+        document.getElementById("score-display").innerText = score;
+        const bar = document.getElementById("health-bar");
+        bar.style.width = health + "%";
         
-        // Check logic (choice 1 = index 0, choice 2 = index 1)
-        const isCorrect = (choice - 1) === q.correctIndex;
+        // 血量顏色變化
+        if (health > 70) bar.style.background = "linear-gradient(90deg, #2ecc71, #27ae60)";
+        else if (health > 30) bar.style.background = "linear-gradient(90deg, #f1c40f, #e67e22)";
+        else bar.style.background = "linear-gradient(90deg, #e74c3c, #c0392b)";
 
-        buttons.forEach(btn => btn.disabled = true); // Disable buttons
-
-        feedback.style.display = "block";
-        document.getElementById("next-btn").style.display = "block";
-
-        if (isCorrect) {
-            score++;
-            feedback.className = "feedback correct";
-            feedback.innerText = q.explanation;
-        } else {
-            feedback.className = "feedback wrong";
-            // Custom wrong message based on context
-            if(q.correctIndex === 1) { // If answer should be self-action (New Style)
-                feedback.innerText = "❌ 哎呀！在這個情境下，店員不是真的要你幫忙他做事，而是客氣地請你自己做喔！[cite: 59]";
-            } else { // If answer should be helping (Traditional)
-                feedback.innerText = "❌ 不對喔！這裡是傳統用法，家人受傷了是真的需要你的幫助！";
-            }
+        if (health <= 0) {
+            gameOver();
         }
     }
 
-    function nextLevel() {
-        currentQ++;
-        if (currentQ < questions.length) {
+    // === 下一題 ===
+    function nextQuestion() {
+        document.getElementById("feedback-overlay").style.display = "none";
+        stopConfetti();
+        if (!isGameOver) {
+            currentQIndex++;
             loadQuestion();
-        } else {
-            showEndScreen();
         }
     }
 
-    function showEndScreen() {
-        document.getElementById("game-screen").style.display = "none";
-        document.getElementById("end-screen").style.display = "block";
-        document.getElementById("final-score").innerText = "你的得分： " + score + " / " + questions.length;
+    // === 遊戲結束 (失敗) ===
+    function gameOver() {
+        isGameOver = true;
+        const overlay = document.getElementById("feedback-overlay");
+        overlay.style.display = "flex";
+        document.getElementById("feedback-title").innerText = "遊戲結束";
+        document.getElementById("feedback-title").className = "feedback-title wrong";
+        document.getElementById("feedback-icon").innerText = "😭";
+        document.getElementById("feedback-msg").innerHTML = "你的台味指數歸零了！<br>店員已經不知道該怎麼跟你溝通了...<br>再試一次吧！";
+        
+        // 更改按鈕行為
+        const nextBtn = document.querySelector(".next-btn");
+        nextBtn.innerText = "重新開始 ↺";
+        nextBtn.onclick = () => location.reload();
     }
 
-    // Start the game
-    loadQuestion();
+    // === 遊戲通關 (勝利) ===
+    function gameWin() {
+        isGameOver = true;
+        const overlay = document.getElementById("feedback-overlay");
+        overlay.style.display = "flex";
+        document.getElementById("feedback-title").innerText = "恭喜通關！";
+        document.getElementById("feedback-title").className = "feedback-title correct";
+        document.getElementById("feedback-icon").innerText = "🏆";
+        document.getElementById("feedback-msg").innerHTML = `你的最終得分：${score}<br>你已經完全掌握台灣服務業的潛規則了！<br>現在去買珍珠奶茶絕對沒問題！`;
+        
+        startConfetti();
+        const nextBtn = document.querySelector(".next-btn");
+        nextBtn.innerText = "再玩一次 ↺";
+        nextBtn.onclick = () => location.reload();
+    }
+
+    // === 簡易彩帶特效系統 (Confetti) ===
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    let confettiParticles = [];
+    let animationId = null;
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function startConfetti() {
+        if (animationId) return;
+        for (let i = 0; i < 100; i++) {
+            confettiParticles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                size: Math.random() * 10 + 5,
+                speedY: Math.random() * 3 + 2,
+                speedX: Math.random() * 2 - 1
+            });
+        }
+        animateConfetti();
+    }
+
+    function stopConfetti() {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confettiParticles = [];
+    }
+
+    function animateConfetti() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confettiParticles.forEach((p, index) => {
+            p.y += p.speedY;
+            p.x += p.speedX;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+            if (p.y > canvas.height) p.y = -10;
+        });
+        animationId = requestAnimationFrame(animateConfetti);
+    }
+
+    // 啟動遊戲
+    initGame();
 
 </script>
-
 </body>
 </html>
