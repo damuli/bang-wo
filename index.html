@@ -3,565 +3,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🇹🇼 台灣華語大冒險：幫我大偵探 V2</title>
+    <title>🇹🇼 台灣華語 RPG：幫我傳說</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+TC:wght@400;700&display=swap');
 
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
+            background-color: #202020;
+            color: #fff;
+            font-family: 'DotGothic16', 'Noto Sans TC', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #2c3e50;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
         }
 
-        /* 動態背景層 */
-        #bg-layer {
-            position: absolute;
-            top: 0;
+        /* CRT 螢幕掃描線特效 */
+        .scanlines {
+            position: fixed;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            filter: blur(4px) brightness(0.6);
-            transition: background-image 0.5s ease-in-out;
-            z-index: -1;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
         }
 
-        /* 遊戲主視窗 */
-        .game-window {
-            width: 90%;
-            max-width: 800px;
-            height: 85vh;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        .game-boy {
+            width: 800px;
+            height: 600px;
+            background-color: #000;
+            border: 4px solid #444;
+            border-radius: 10px;
+            position: relative;
             display: flex;
             flex-direction: column;
-            position: relative;
-            overflow: hidden;
-            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0,255,0,0.2);
         }
 
-        /* 頂部狀態列 */
+        /* 上半部：場景區 */
+        .scene-display {
+            flex: 2;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            border-bottom: 4px solid #fff;
+            image-rendering: pixelated;
+        }
+        
+        .npc-sprite {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 150px;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            animation: bounce 2s infinite;
+        }
+
+        /* 狀態欄 */
         .status-bar {
-            background: #333;
-            color: white;
+            background: #222;
             padding: 10px 20px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
+            border-bottom: 2px solid #555;
+            font-size: 1.2em;
+            color: #0f0; /* 復古綠 */
         }
 
-        /* 台味指數血條 */
-        .health-container {
-            width: 50%;
-            background: #555;
-            height: 20px;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 2px solid #fff;
-        }
-        .health-bar {
-            width: 50%; /* 初始值 */
-            height: 100%;
-            background: linear-gradient(90deg, #f1c40f, #e67e22);
-            transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        /* 角色區域 */
-        .character-area {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-        .character-emoji {
-            font-size: 150px;
-            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
-            animation: float 3s ease-in-out infinite;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .character-emoji:hover {
-            transform: scale(1.1);
-        }
-
-        /* 對話框區域 */
-        .dialogue-section {
-            background: #fff;
+        /* 下半部：對話與操作區 */
+        .dialogue-box {
+            flex: 1;
             padding: 20px;
-            border-top: 4px solid #3498db;
-            min-height: 250px;
+            background: #000;
+            color: #fff;
+            font-size: 1.4em;
+            line-height: 1.6;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
         }
 
-        .name-tag {
-            background: #3498db;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 15px;
-            display: inline-block;
-            font-weight: 900;
-            margin-bottom: 10px;
-            align-self: flex-start;
-            box-shadow: 2px 2px 0px #2980b9;
+        .typing-text::after {
+            content: '▋';
+            animation: blink 0.8s infinite;
         }
 
-        .dialogue-text {
-            font-size: 1.3em;
-            color: #2c3e50;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            min-height: 60px;
-        }
-
-        .keyword {
-            color: #e74c3c;
-            font-weight: 900;
-            font-size: 1.4em;
-            background: rgba(231, 76, 60, 0.1);
-            padding: 0 5px;
-            border-radius: 5px;
-        }
-
-        /* 選項按鈕 */
-        .options-grid {
+        .choices-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+            margin-top: 15px;
         }
-        
-        .option-btn {
-            background: white;
-            border: 2px solid #bdc3c7;
+
+        .rpg-btn {
+            background: #000;
+            border: 2px solid #fff;
+            color: #fff;
             padding: 15px;
-            border-radius: 12px;
-            font-size: 1.1em;
+            font-family: inherit;
+            font-size: 1em;
             cursor: pointer;
-            transition: all 0.2s;
-            font-weight: bold;
-            color: #7f8c8d;
-            box-shadow: 0 4px 0 #bdc3c7;
+            text-align: left;
+            transition: 0.2s;
         }
 
-        .option-btn:hover {
-            border-color: #3498db;
-            color: #3498db;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 0 #bdc3c7;
+        .rpg-btn:hover {
+            background: #fff;
+            color: #000;
+            border-color: #0f0;
         }
 
-        .option-btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 0 0 #bdc3c7;
+        .rpg-btn:active {
+            transform: scale(0.98);
         }
 
-        /* 浮誇的回饋視窗 (Overlay) */
-        #feedback-overlay {
+        /* 結局畫面特效 */
+        .ending-screen {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.95);
             display: none;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
-            z-index: 100;
-            animation: fadeIn 0.3s;
-        }
-
-        .feedback-card {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
+            z-index: 20;
             text-align: center;
-            width: 70%;
-            transform: scale(0.8);
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        
+        .ending-title {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #f1c40f;
+            text-shadow: 4px 4px 0 #c0392b;
         }
 
-        .feedback-title {
-            font-size: 2em;
-            margin: 0 0 10px 0;
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
         }
-        .feedback-title.correct { color: #2ecc71; text-shadow: 2px 2px 0 #27ae60;}
-        .feedback-title.wrong { color: #e74c3c; text-shadow: 2px 2px 0 #c0392b;}
-
-        .next-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 30px;
-            font-size: 1.2em;
-            border-radius: 50px;
-            cursor: pointer;
-            margin-top: 20px;
-            font-weight: bold;
-            box-shadow: 0 5px 0 #2980b9;
-            transition: transform 0.1s;
-        }
-        .next-btn:active { transform: translateY(3px); box-shadow: none; }
-
-        /* 動畫特效 */
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-        @keyframes popIn {
-            to { transform: scale(1); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
-
-        .shake-effect {
-            animation: shake 0.5s;
-        }
-
-        /* 簡易彩帶 Canvas */
-        #confetti-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 999;
-        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
     </style>
 </head>
 <body>
-
-    <div id="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000');"></div>
-
-    <div class="game-window" id="game-window">
+    <div class="scanlines"></div>
+    <div class="game-boy">
         <div class="status-bar">
-            <span>LEVEL <span id="level-display">1</span></span>
-            <div style="display: flex; align-items: center; gap: 10px; width: 60%;">
-                <span>🔥 台味指數 (Tai-wei Level):</span>
-                <div class="health-container">
-                    <div class="health-bar" id="health-bar"></div>
+            <div>LV. <span id="level">1</span> 外國學生</div>
+            <div>HP (面子): <span id="hp">100</span>/100</div>
+            <div>EXP (台味): <span id="exp">0</span></div>
+        </div>
+
+        <div class="scene-display" id="scene-bg" style="background-image: url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000');">
+            <div class="npc-sprite" id="npc-emoji">🥤</div>
+        </div>
+
+        <div class="dialogue-box">
+            <div id="story-text" class="typing-text">遊戲載入中...</div>
+            <div class="choices-container" id="choices-area">
                 </div>
-            </div>
-            <span>SCORE: <span id="score-display">0</span></span>
         </div>
 
-        <div class="character-area">
-            <div class="character-emoji" id="char-emoji">🧑‍🍳</div>
+        <div class="ending-screen" id="ending-layer">
+            <h1 class="ending-title" id="ending-title">結局</h1>
+            <p id="ending-desc" style="font-size: 1.5em; max-width: 80%; margin-bottom: 30px;"></p>
+            <button class="rpg-btn" onclick="location.reload()" style="width: 200px; text-align: center;">重新冒險</button>
         </div>
-
-        <div class="dialogue-section">
-            <div class="name-tag" id="char-name">店員</div>
-            <div class="dialogue-text" id="dialogue-text">
-                載入中...
-            </div>
-            <div class="options-grid" id="options-area">
-                <button class="option-btn" onclick="makeChoice(0)">選項 A</button>
-                <button class="option-btn" onclick="makeChoice(1)">選項 B</button>
-            </div>
-        </div>
-
-        <div id="feedback-overlay">
-            <div class="feedback-card">
-                <h2 class="feedback-title" id="feedback-title">標題</h2>
-                <div style="font-size: 50px; margin-bottom: 10px;" id="feedback-icon">🎉</div>
-                <p style="font-size: 1.1em; line-height: 1.5; color: #555;" id="feedback-msg">內容</p>
-                <button class="next-btn" onclick="nextQuestion()">繼續下一題 ➜</button>
-            </div>
-        </div>
-
-        <canvas id="confetti-canvas"></canvas>
     </div>
 
 <script>
-    // === 遊戲資料庫 (參考論文真實語料) ===
-    const questions = [
+    // === RPG 數據系統 ===
+    let hp = 100; // 面子 (Face)
+    let exp = 0;  // 台味 (Local Vibe)
+    let currentStep = 0;
+
+    // === 劇本資料庫 (基於論文研究) ===
+    const storyLine = [
         {
-            bg: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?q=80&w=1000", // Coffee Shop
-            role: "飲料店店員 (Clerk)",
-            emoji: "🥤",
-            text: "飲料好囉！喝之前再<span class='keyword'>幫我</span>搖一下喔！",
+            // 序章
+            bg: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=1000",
+            npc: "✈️",
+            text: "你剛抵達台灣，肚子很餓。這是一場關於「禮貌」與「生存」的冒險。\n如果你的「面子(HP)」歸零，遊戲就會結束。\n\n你走進了一家知名飲料店...",
             choices: [
-                { text: "我幫店員搖飲料 (Shake for clerk)", type: "wrong" },
-                { text: "我自己搖我自己的飲料 (Shake my own)", type: "correct" }
-            ],
-            correctMsg: "沒錯！店員才不想喝你的飲料呢 😂。<br>這是服務業的「客氣指令」。",
-            wrongMsg: "尷尬了！店員用奇怪的眼神看著你...<br>他其實只是要你自己搖一搖啦！"
+                { text: "開始冒險", next: 1, effect: null }
+            ]
         },
         {
-            bg: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1000", // Living Room
-            role: "受傷的兒子 (Son)",
-            emoji: "🤕",
-            text: "媽，我的腳好痛，請<span class='keyword'>幫我</span>脫一下襪子。",
+            // 第一關：飲料店 (搖一搖)
+            // 引用論文：新式「幫我」[cite: 58, 174]
+            bg: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?q=80&w=1000",
+            npc: "🥤",
+            text: "【店員】：「先生你好，這杯黑糖珍奶，喝之前麻煩 **幫我** 搖一下喔！」\n\n(你的抉擇時刻到了...)",
             choices: [
-                { text: "媽媽幫兒子脫襪子 (Help him)", type: "correct" },
-                { text: "媽媽脫掉自己的襪子 (Take off own)", type: "wrong" }
-            ],
-            correctMsg: "正確！這是傳統的「請求協助」。<br>因為兒子受傷了，是真的需要幫忙！",
-            wrongMsg: "等等！媽媽為什麼要脫自己的襪子？<br>這時候是真的需要幫忙啦！😂"
+                { 
+                    text: "A. 好的！(拿過飲料，自己上下搖晃)", 
+                    next: 2, 
+                    effect: { hp: 0, exp: 20, msg: "店員微笑點頭。你獲得了 20 點台味經驗值！" } 
+                },
+                { 
+                    text: "B. 沒問題！(不接飲料，抓住店員的手開始搖)", 
+                    next: 2, 
+                    effect: { hp: -30, exp: 0, msg: "店員嚇壞了！全場靜默...你的「面子」受損了 30 點！\n(解析：店員是請你自己搖飲料，不是要你幫他搖。)" } 
+                }
+            ]
         },
         {
-            bg: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000", // Hospital/Clinic
-            role: "護理師 (Nurse)",
-            emoji: "👩‍⚕️",
-            text: "先生你好，我們要量體脂囉，請<span class='keyword'>幫我</span>脫一下襪子。",
+            // 第二關：診所/按摩 (脫襪子) - 這是最危險的一關
+            // 引用論文：歧義現象 [cite: 7, 78, 138]
+            bg: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000",
+            npc: "👩‍⚕️",
+            text: "你覺得身體有點累，去做了健康檢查。\n【護理師】：「先生，我們要量體脂囉，請 **幫我** 脫一下襪子。」",
             choices: [
-                { text: "我幫護理師脫襪子 (Help nurse)", type: "wrong" },
-                { text: "我脫自己的襪子 (Take off mine)", type: "correct" }
-            ],
-            correctMsg: "太強了！你懂台灣的潛規則。<br>這是為了流程順暢，請你自己配合脫襪子。",
-            wrongMsg: "警察叔叔！就是這個人！🚨<br>你去脫護理師的襪子會被抓走的！這是客氣的指令！"
+                { 
+                    text: "A. (蹲下來，伸手去脫護理師的襪子)", 
+                    next: 3, 
+                    effect: { hp: -60, exp: 0, msg: "護理師尖叫：「變態！」警察差點來了。\n你的「面子」受到重創，扣除 60 點！\n(解析：這是服務業的禮貌指令，是請你脫自己的襪子！)" } 
+                },
+                { 
+                    text: "B. (脫掉自己腳上的襪子)", 
+                    next: 3, 
+                    effect: { hp: 0, exp: 30, msg: "流程順利進行。你感覺自己越來越像台灣人了！\n(獲得 30 點台味)" } 
+                }
+            ]
         },
         {
-            bg: "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=1000", // Restaurant
-            role: "餐廳帶位員 (Waiter)",
-            emoji: "🍽️",
-            text: "兩位嗎？前面請<span class='keyword'>幫我</span>坐在第三桌喔。",
+            // 第三關：餐廳 (帶位)
+            // 引用論文：場域協調型 [cite: 65, 84]
+            bg: "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=1000",
+            npc: "🍽️",
+            text: "檢查完身體餓了，你來到一家熱炒店。\n【服務生】：「兩位嗎？前面請 **幫我** 坐在第三桌喔。」",
             choices: [
-                { text: "我走到第三桌坐下來 (Go sit)", type: "correct" },
-                { text: "我幫服務生坐在那邊 (Help waiter sit)", type: "wrong" }
-            ],
-            correctMsg: "Bingo! 這是「場域協調型」的幫我。<br>聽起來比「請去坐那邊」更有禮貌對吧？",
-            wrongMsg: "服務生還在上班，不能坐啦！😅<br>他是請你自己去坐那個位子。"
+                { 
+                    text: "A. (走過去，把服務生公主抱到第三桌)", 
+                    next: 4, 
+                    effect: { hp: -50, exp: 0, msg: "服務生臉紅又生氣。你被趕出了餐廳。\n(解析：這是空間指引，不是要你幫服務生就座！)" } 
+                },
+                { 
+                    text: "B. (自己走到第三桌坐下)", 
+                    next: 4, 
+                    effect: { hp: 0, exp: 20, msg: "你順利入座。隔壁桌的大哥稱讚你「內行」！\n(獲得 20 點台味)" } 
+                }
+            ]
         },
         {
-             bg: "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=80&w=1000", // Cashier
-             role: "結帳店員 (Cashier)",
-             emoji: "💳",
-             text: "這張卡片感應不到耶，<span class='keyword'>幫我</span>插卡試試看。",
-             choices: [
-                 { text: "我拿店員的卡片插 (Insert clerk's card)", type: "wrong" },
-                 { text: "我把我的卡片插進去 (Insert my card)", type: "correct" }
-             ],
-             correctMsg: "完全正確！這是指令。<br>店員希望你自己操作刷卡機。",
-             wrongMsg: "店員沒有要給你他的卡片啦！<br>他是請你自己操作你的卡片。"
+            // 第四關：傳統情境 (陷阱題)
+            // 引用論文：傳統幫我 vs 新式幫我 [cite: 19, 114]
+            bg: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1000",
+            npc: "📦",
+            text: "回家路上，看到鄰居阿婆搬著很重的箱子。\n【阿婆】：「年輕人，**幫我** 搬一下這個好嗎？」",
+            choices: [
+                { 
+                    text: "A. (站在原地看著阿婆，以為她在對自己說話)", 
+                    next: 99, // 99 代表結算
+                    effect: { hp: -20, exp: 0, msg: "阿婆翻了個白眼走了。\n(解析：這是傳統情境！是真的需要幫忙！)" } 
+                },
+                { 
+                    text: "B. (立刻上前接過箱子)", 
+                    next: 99, 
+                    effect: { hp: 10, exp: 30, msg: "阿婆：「哩揪甘心耶！」(你真貼心)\n(面子恢復 10 點，獲得 30 點台味)" } 
+                }
+            ]
         }
     ];
 
-    // === 遊戲狀態 ===
-    let currentQIndex = 0;
-    let score = 0;
-    let health = 50; // 台味指數初始值
-    let isGameOver = false;
+    // === 遊戲核心邏輯 ===
 
-    // === 初始化 ===
-    function initGame() {
-        score = 0;
-        health = 50;
-        currentQIndex = 0;
-        updateStats();
-        loadQuestion();
-        document.getElementById("end-screen")?.remove();
-    }
-
-    // === 載入題目 ===
-    function loadQuestion() {
-        if (currentQIndex >= questions.length) {
-            gameWin();
+    function renderScene(index) {
+        // 檢查是否死亡
+        if (hp <= 0) {
+            showEnding("bad_social_death");
             return;
         }
 
-        const q = questions[currentQIndex];
-        
-        // 更新文字
-        document.getElementById("level-display").innerText = currentQIndex + 1;
-        document.getElementById("char-name").innerText = q.role;
-        document.getElementById("char-emoji").innerText = q.emoji;
-        document.getElementById("dialogue-text").innerHTML = `「${q.text}」`;
-        
-        // 更新背景 (淡入淡出)
-        const bgLayer = document.getElementById("bg-layer");
-        bgLayer.style.opacity = 0;
-        setTimeout(() => {
-            bgLayer.style.backgroundImage = `url('${q.bg}')`;
-            bgLayer.style.opacity = 1;
-        }, 500);
+        // 檢查是否通關
+        if (index === 99) {
+            determineEnding();
+            return;
+        }
 
-        // 更新按鈕 (隨機順序)
-        const btnArea = document.getElementById("options-area");
-        btnArea.innerHTML = "";
-        
-        // 簡單洗牌
-        let shuffledChoices = [...q.choices].sort(() => Math.random() - 0.5);
+        const data = storyLine[index];
+        currentStep = index;
 
-        shuffledChoices.forEach(choice => {
+        // 更新背景與 NPC
+        document.getElementById("scene-bg").style.backgroundImage = `url('${data.bg}')`;
+        document.getElementById("npc-emoji").innerText = data.npc;
+
+        // 打字機效果輸出文字
+        const textBox = document.getElementById("story-text");
+        textBox.innerHTML = "";
+        let i = 0;
+        const speed = 30; 
+        
+        function typeWriter() {
+            if (i < data.text.length) {
+                textBox.innerHTML += data.text.charAt(i) === '\n' ? '<br>' : data.text.charAt(i);
+                i++;
+                setTimeout(typeWriter, speed);
+            } else {
+                // 文字打完後，生成選項
+                renderChoices(data.choices);
+            }
+        }
+        typeWriter();
+        
+        // 清空舊選項
+        document.getElementById("choices-area").innerHTML = "";
+    }
+
+    function renderChoices(choices) {
+        const area = document.getElementById("choices-area");
+        choices.forEach(choice => {
             const btn = document.createElement("button");
-            btn.className = "option-btn";
+            btn.className = "rpg-btn";
             btn.innerText = choice.text;
-            btn.onclick = () => handleAnswer(choice.type, choice.text);
-            btnArea.appendChild(btn);
+            btn.onclick = () => handleChoice(choice);
+            area.appendChild(btn);
         });
     }
 
-    // === 處理回答 ===
-    function handleAnswer(type, text) {
-        const overlay = document.getElementById("feedback-overlay");
-        const title = document.getElementById("feedback-title");
-        const msg = document.getElementById("feedback-msg");
-        const icon = document.getElementById("feedback-icon");
-        const q = questions[currentQIndex];
-
-        overlay.style.display = "flex";
-
-        if (type === "correct") {
-            // 答對邏輯
-            score += 100;
-            health = Math.min(100, health + 20); // 加血
-            title.innerText = "太強了！道地台味！";
-            title.className = "feedback-title correct";
-            msg.innerHTML = q.correctMsg;
-            icon.innerText = "🤩";
-            startConfetti(); // 噴彩帶
-        } else {
-            // 答錯邏輯
-            health = Math.max(0, health - 30); // 扣血
-            title.innerText = "尷尬了...店員傻眼";
-            title.className = "feedback-title wrong";
-            msg.innerHTML = q.wrongMsg;
-            icon.innerText = "🥶";
+    function handleChoice(choice) {
+        // 處理效果
+        if (choice.effect) {
+            hp += choice.effect.hp;
+            exp += choice.effect.exp;
+            if (hp > 100) hp = 100;
             
-            // 畫面震動特效
-            const gameWindow = document.getElementById("game-window");
-            gameWindow.classList.add("shake-effect");
-            setTimeout(() => gameWindow.classList.remove("shake-effect"), 500);
+            // 更新 UI
+            updateStats();
+            
+            // 顯示反饋 (簡單的 alert 或中間層，這裡用 alert 模擬 RPG 系統訊息)
+            if (choice.effect.msg) {
+                alert(choice.effect.msg);
+            }
         }
 
-        updateStats();
+        // 前往下一關
+        renderScene(choice.next);
     }
 
-    // === 更新狀態條 ===
     function updateStats() {
-        document.getElementById("score-display").innerText = score;
-        const bar = document.getElementById("health-bar");
-        bar.style.width = health + "%";
+        document.getElementById("hp").innerText = hp;
+        document.getElementById("exp").innerText = exp;
         
-        // 血量顏色變化
-        if (health > 70) bar.style.background = "linear-gradient(90deg, #2ecc71, #27ae60)";
-        else if (health > 30) bar.style.background = "linear-gradient(90deg, #f1c40f, #e67e22)";
-        else bar.style.background = "linear-gradient(90deg, #e74c3c, #c0392b)";
+        // 血量顏色
+        const hpEl = document.getElementById("hp");
+        if (hp < 30) hpEl.style.color = "#e74c3c"; // 紅
+        else if (hp < 70) hpEl.style.color = "#f1c40f"; // 黃
+        else hpEl.style.color = "#0f0"; // 綠
+    }
 
-        if (health <= 0) {
-            gameOver();
+    function determineEnding() {
+        if (exp >= 80) {
+            showEnding("master");
+        } else if (exp >= 40) {
+            showEnding("normal");
+        } else {
+            showEnding("awkward");
         }
     }
 
-    // === 下一題 ===
-    function nextQuestion() {
-        document.getElementById("feedback-overlay").style.display = "none";
-        stopConfetti();
-        if (!isGameOver) {
-            currentQIndex++;
-            loadQuestion();
-        }
-    }
-
-    // === 遊戲結束 (失敗) ===
-    function gameOver() {
-        isGameOver = true;
-        const overlay = document.getElementById("feedback-overlay");
-        overlay.style.display = "flex";
-        document.getElementById("feedback-title").innerText = "遊戲結束";
-        document.getElementById("feedback-title").className = "feedback-title wrong";
-        document.getElementById("feedback-icon").innerText = "😭";
-        document.getElementById("feedback-msg").innerHTML = "你的台味指數歸零了！<br>店員已經不知道該怎麼跟你溝通了...<br>再試一次吧！";
+    function showEnding(type) {
+        const screen = document.getElementById("ending-layer");
+        const title = document.getElementById("ending-title");
+        const desc = document.getElementById("ending-desc");
         
-        // 更改按鈕行為
-        const nextBtn = document.querySelector(".next-btn");
-        nextBtn.innerText = "重新開始 ↺";
-        nextBtn.onclick = () => location.reload();
-    }
+        screen.style.display = "flex";
 
-    // === 遊戲通關 (勝利) ===
-    function gameWin() {
-        isGameOver = true;
-        const overlay = document.getElementById("feedback-overlay");
-        overlay.style.display = "flex";
-        document.getElementById("feedback-title").innerText = "恭喜通關！";
-        document.getElementById("feedback-title").className = "feedback-title correct";
-        document.getElementById("feedback-icon").innerText = "🏆";
-        document.getElementById("feedback-msg").innerHTML = `你的最終得分：${score}<br>你已經完全掌握台灣服務業的潛規則了！<br>現在去買珍珠奶茶絕對沒問題！`;
-        
-        startConfetti();
-        const nextBtn = document.querySelector(".next-btn");
-        nextBtn.innerText = "再玩一次 ↺";
-        nextBtn.onclick = () => location.reload();
-    }
-
-    // === 簡易彩帶特效系統 (Confetti) ===
-    const canvas = document.getElementById("confetti-canvas");
-    const ctx = canvas.getContext("2d");
-    let confettiParticles = [];
-    let animationId = null;
-
-    function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function startConfetti() {
-        if (animationId) return;
-        for (let i = 0; i < 100; i++) {
-            confettiParticles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height - canvas.height,
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                size: Math.random() * 10 + 5,
-                speedY: Math.random() * 3 + 2,
-                speedX: Math.random() * 2 - 1
-            });
+        if (type === "master") {
+            title.innerText = "🏆 結局：台味大師";
+            desc.innerHTML = "你完全掌握了「幫我」的精隨！<br>現在你已經可以像當地人一樣，<br>在飲料店和診所自如穿梭。<br>服務員都覺得你超有禮貌！";
+            desc.style.color = "#f1c40f";
+        } else if (type === "normal") {
+            title.innerText = "😐 結局：普通的遊客";
+            desc.innerHTML = "你雖然偶爾會會錯意，<br>但大體上還算過得去。<br>這就是學習語言的過程嘛！";
+            desc.style.color = "#fff";
+        } else if (type === "awkward") {
+            title.innerText = "🥶 結局：尷尬癌末期";
+            desc.innerHTML = "你總是把「幫我」當成真的要幫忙...<br>你試圖幫店員做事，卻造成了更多麻煩。<br>店員們現在看到你都會躲起來。";
+            desc.style.color = "#3498db";
+        } else if (type === "bad_social_death") {
+            title.innerText = "💀 結局：社會性死亡";
+            desc.innerHTML = "你的面子(HP)歸零了。<br>因為你在診所脫了護理師的襪子，<br>現在你已經被列入黑名單，遊戲結束。";
+            desc.style.color = "#e74c3c";
         }
-        animateConfetti();
-    }
-
-    function stopConfetti() {
-        cancelAnimationFrame(animationId);
-        animationId = null;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        confettiParticles = [];
-    }
-
-    function animateConfetti() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        confettiParticles.forEach((p, index) => {
-            p.y += p.speedY;
-            p.x += p.speedX;
-            ctx.fillStyle = p.color;
-            ctx.fillRect(p.x, p.y, p.size, p.size);
-            if (p.y > canvas.height) p.y = -10;
-        });
-        animationId = requestAnimationFrame(animateConfetti);
     }
 
     // 啟動遊戲
-    initGame();
+    renderScene(0);
 
 </script>
 </body>
